@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const Predictor = () => {
     const [sequence, setSequence] = useState('');
-    const [result, setResult] = useState(null); // Set initial result to null
+    const [result, setResult] = useState(null);
     const [error, setError] = useState('');
 
     const handleInputChange = (e) => {
@@ -13,9 +13,8 @@ const Predictor = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setResult(null); // Reset result on new submission
+        setResult(null);
 
-        // Validate sequence length
         if (sequence.length !== 57) {
             setError('Sequence must be exactly 57 nucleotides long.');
             return;
@@ -23,7 +22,7 @@ const Predictor = () => {
 
         try {
             const response = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
-            setResult(response.data); // Store the entire response object
+            setResult(response.data);
         } catch (err) {
             setError(err.response ? err.response.data.error : 'An error occurred');
         }
@@ -42,7 +41,7 @@ const Predictor = () => {
                 />
                 <button type="submit">Predict</button>
             </form>
-            {result && (  // Check if result exists before displaying
+            {result && (
                 <div>
                     <h2>Prediction:</h2>
                     <p>Class: {result.class}</p>
