@@ -24,12 +24,12 @@ const Predictor = () => {
 
         try {
             // Check if the sequence exists in the dataset (assuming the dataset is accessible via URL)
-            const datasetResponse = await axios.get('https://archive.ics.uci.edu/ml/machine-learning-databases/molecular-biology/promoter-gene-sequences/promoters.data"');
+            const datasetResponse = await axios.get('https://archive.ics.uci.edu/ml/machine-learning-databases/molecular-biology/promoter-gene-sequences/promoters.data');
             const dataset = datasetResponse.data; // Assuming it's a JSON array or object with sequences
 
             // Check if the sequence is in the dataset
             if (!dataset.includes(sequence)) {
-                setError('Sequence not found.');
+                setError('Sequence not found in dataset.');
                 setPrediction(null);
                 return;
             }
@@ -37,13 +37,32 @@ const Predictor = () => {
             // Send the sequence to the backend for prediction
             const response = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
 
-            // Update the prediction state with the result from backend
-            setPrediction(response.data);
-            setError('');
+            // Check if the backend returned an expected result
+            if (response && response.data) {
+                // Update the prediction state with the result from backend
+                setPrediction(response.data);
+                setError('');
+            } else {
+                setError('Invalid response from backend.');
+                setPrediction(null);
+            }
         } catch (err) {
-            // Handle error response
+            // Log the error to check the actual cause
+            console.error('Error:', err);
+
+            // Handle error response more specifically
+            if (err.response) {
+                // If there's a response from the backend
+                setError(err.response?.data?.error || 'Something went wrong with the request');
+            } else if (err.request) {
+                // If the request was made but no response was received
+                setError('No response received from the backend.');
+            } else {
+                // General error message
+                setError('An error occurred while processing the request.');
+            }
+
             setPrediction(null);
-            setError(err.response?.data?.error || 'Something went wrong');
         }
     };
 
