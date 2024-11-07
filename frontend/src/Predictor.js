@@ -35,7 +35,9 @@ const Predictor = () => {
             }
 
             // Send the sequence to the backend for prediction
-            const response = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
+            const response = await axios.post('https://dnasequence.onrender.com/predict', 
+                { sequence }, 
+                { timeout: 10000 });
 
             // Check if the backend returned an expected result
             if (response && response.data) {
