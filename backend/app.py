@@ -1,63 +1,61 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-import requests
 import pandas as pd
-import joblib
-import os
+import requests
+from io import StringIO
 
 app = Flask(__name__)
-CORS(app, origins=["https://dna-sequence.vercel.app"])
-CORS(app)
 
-# Load pre-trained model
-model_path = 'model1.pkl'
-if os.path.exists(model_path):
-    model = joblib.load(model_path)
-else:
-    model = None  # Handle case if model is missing
+# URL of your dataset (replace with the actual URL)
+dataset_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/molecular-biology/promoter-gene-sequences/promoters.data"
 
-# Dataset URL for fetching promoter sequences
-DATASET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/molecular-biology/promoter-gene-sequences/promoters.data"
-
-def fetch_dataset():
-    try:
-        response = requests.get(DATASET_URL)
-        response.raise_for_status()  
-        
-        # Parse UCI dataset format
-        from io import StringIO
-        csv_content = StringIO(response.text)
-        df = pd.read_csv(csv_content, header=None, names=['class', 'id', 'sequence'])
-
-        return df.to_dict(orient='records')
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching dataset: {e}")
-        return []
+def load_dataset():
+    # Fetch the dataset from the URL
+    response = requests.get(dataset_url)
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Load the dataset into a pandas DataFrame
+        data = StringIO(response.text)
+        df = pd.read_csv(data)
+        return df
+    else:
+        return None
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if model is None:
-        return jsonify({'error': 'Model not available'}), 500
+    try:
+        # Get the sequence from the request
+        data = request.get_json()
+        sequence = data.get('sequence')
 
-    data = request.json
-    sequence = data.get('sequence', '')
+        if not sequence:
+            return jsonify({'error': 'No sequence provided'}), 400
+        
+        # Load the dataset from the URL
+        df = load_dataset()
+        
+        if df is None:
+            return jsonify({'error': 'Failed to load the dataset'}), 500
+        
+        # Search for the sequence in the dataset
+        match = df[df['sequence'] == sequence]
 
-    # Ensure sequence length is correct
-    if len(sequence) != 57:
-        return jsonify({'error': 'Sequence must be exactly 57 nucleotides long.'}), 400
+        # If the sequence is found
+        if not match.empty:
+            # Get the class (either '+' or '-')
+            prediction_class = match.iloc[0]['class']
+            
+            if prediction_class == '+':
+                prediction = 'Promoter'
+            else:
+                prediction = 'Non-Promoter'
+            
+            return jsonify({'class': prediction_class, 'prediction': prediction}), 200
+        
+        # If the sequence is not found
+        return jsonify({'error': 'Sequence not found in the dataset'}), 404
 
-    # Fetch dataset to compare input sequence
-    dataset = fetch_dataset()
-    if not dataset:
-        return jsonify({'error': 'Could not fetch dataset.'}), 500
-
-    # Check if sequence exists in dataset
-    matched_entry = next((entry for entry in dataset if entry['sequence'] == sequence), None)
-    
-    if matched_entry:
-        return jsonify({'class': matched_entry['class'], 'id': matched_entry['id']})
-    else:
-        return jsonify({'error': 'Sequence not found in dataset.'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

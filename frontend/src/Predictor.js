@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const Predictor = () => {
     const [sequence, setSequence] = useState('');
-    const [result, setResult] = useState(null); 
+    const [result, setResult] = useState(null);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -17,18 +17,16 @@ const Predictor = () => {
         setResult(null);
         setIsLoading(true);
 
-        // Check if the sequence length is exactly 57 nucleotides
-        if (sequence.length !== 57) {
-            setError('Sequence must be exactly 57 nucleotides long.');
-            setIsLoading(false);
-            return;
-        }
-
         try {
             const response = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
-            setResult(response.data);
+            // Check if the response contains a class
+            if (response.data.class) {
+                setResult(response.data);
+            } else {
+                setError('Prediction error: Sequence not found in the dataset.');
+            }
         } catch (err) {
-            setError(err.response?.data?.error || 'An error occurred');
+            setError(err.response ? err.response.data.error : 'An error occurred');
         } finally {
             setIsLoading(false);
         }
@@ -42,22 +40,18 @@ const Predictor = () => {
                     type="text"
                     value={sequence}
                     onChange={handleInputChange}
-                    placeholder="Enter 57-nucleotide sequence"
+                    placeholder="Enter nucleotide sequence"
                     required
                 />
                 <button type="submit">Predict</button>
             </form>
-            
             {isLoading && <p>Loading...</p>}
-            
             {result && (
                 <div>
                     <h2>Prediction:</h2>
                     <p>Class: {result.class === '+' ? 'Promoter' : 'Non-Promoter'}</p>
-                    
                 </div>
             )}
-
             {error && <h2 style={{ color: 'red' }}>{error}</h2>}
         </div>
     );
