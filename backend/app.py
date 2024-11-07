@@ -6,7 +6,6 @@ import joblib
 import os
 
 app = Flask(__name__)
-CORS(app, origins=["https://dna-sequence.vercel.app"])
 CORS(app)
 
 # Load pre-trained model
@@ -22,16 +21,24 @@ DATASET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/molecul
 def fetch_dataset():
     try:
         response = requests.get(DATASET_URL)
-        response.raise_for_status()  
+        response.raise_for_status()  # Ensure the response was successful
         
         # Parse UCI dataset format
         from io import StringIO
         csv_content = StringIO(response.text)
         df = pd.read_csv(csv_content, header=None, names=['class', 'id', 'sequence'])
-
+        
+        # Ensure the dataset contains the expected columns
+        if 'class' not in df.columns or 'id' not in df.columns or 'sequence' not in df.columns:
+            raise ValueError("Dataset format is incorrect, expected columns: 'class', 'id', 'sequence'")
+        
         return df.to_dict(orient='records')
+    
     except requests.exceptions.RequestException as e:
         print(f"Error fetching dataset: {e}")
+        return []
+    except ValueError as e:
+        print(f"Dataset format error: {e}")
         return []
 
 @app.route('/predict', methods=['POST'])
