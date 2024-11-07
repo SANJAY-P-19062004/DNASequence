@@ -17,6 +17,7 @@ const Predictor = () => {
         setResult(null);
         setIsLoading(true);
 
+        // Check if the sequence length is exactly 57 nucleotides
         if (sequence.length !== 57) {
             setError('Sequence must be exactly 57 nucleotides long.');
             setIsLoading(false);
@@ -27,7 +28,7 @@ const Predictor = () => {
             const response = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
             setResult(response.data);
         } catch (err) {
-            setError(err.response ? err.response.data.error : 'An error occurred');
+            setError(err.response?.data?.error || 'An error occurred');
         } finally {
             setIsLoading(false);
         }
@@ -46,17 +47,16 @@ const Predictor = () => {
                 />
                 <button type="submit">Predict</button>
             </form>
+            
             {isLoading && <p>Loading...</p>}
+            
             {result && (
-  <div>
-    <h2>Prediction:</h2>
-    
-    <p>Class: {result.sequence === '+' ? 'Promoter' : 'Non-Promoter'}</p>
-    
-  </div>
-)}
-
-
+                <div>
+                    <h2>Prediction:</h2>
+                    <p>Class: {result.class === '+' ? 'Promoter' : 'Non-Promoter'}</p>
+                    
+                </div>
+            )}
 
             {error && <h2 style={{ color: 'red' }}>{error}</h2>}
         </div>
