@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const PredictSequence = () => {
+const Predictor = () => {
     const [sequence, setSequence] = useState('');
     const [prediction, setPrediction] = useState(null);
     const [error, setError] = useState('');
@@ -57,4 +57,4 @@ const PredictSequence = () => {
     );
 };
 
-export default PredictSequence;
+export default Predictor;
