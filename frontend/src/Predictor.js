@@ -23,6 +23,14 @@ const Predictor = () => {
         }
     };
 
+    // Classify prediction as Promoter or Non-Promoter
+    const getClassification = () => {
+        if (prediction && prediction.prediction) {
+            return prediction.prediction === '+' ? 'Promoter' : 'Non-Promoter';
+        }
+        return '';
+    };
+
     return (
         <div>
             <h1>Sequence Classification</h1>
@@ -42,8 +50,8 @@ const Predictor = () => {
             {prediction && (
                 <div>
                     <h2>Prediction Result</h2>
-                    <p><strong>Class:</strong> {prediction.class}</p>
                     <p><strong>Prediction:</strong> {prediction.prediction}</p>
+                    <p><strong>Classification:</strong> {getClassification()}</p>
                 </div>
             )}
 
