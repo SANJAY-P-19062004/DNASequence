@@ -1,61 +1,30 @@
 from flask import Flask, request, jsonify
-import pandas as pd
-import requests
-from io import StringIO
+import time
 
 app = Flask(__name__)
-
-# URL of your dataset (replace with the actual URL)
-dataset_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/molecular-biology/promoter-gene-sequences/promoters.data"
-
-def load_dataset():
-    # Fetch the dataset from the URL
-    response = requests.get(dataset_url)
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
-        # Load the dataset into a pandas DataFrame
-        data = StringIO(response.text)
-        df = pd.read_csv(data)
-        return df
-    else:
-        return None
 
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get the sequence from the request
+        # Simulate a delay for debugging
+        time.sleep(2)
+
+        # Get the sequence from the request body
         data = request.get_json()
         sequence = data.get('sequence')
 
-        if not sequence:
-            return jsonify({'error': 'No sequence provided'}), 400
-        
-        # Load the dataset from the URL
-        df = load_dataset()
-        
-        if df is None:
-            return jsonify({'error': 'Failed to load the dataset'}), 500
-        
-        # Search for the sequence in the dataset
-        match = df[df['sequence'] == sequence]
+        if not sequence or len(sequence) != 57:
+            return jsonify({'error': 'Invalid sequence'}), 400
 
-        # If the sequence is found
-        if not match.empty:
-            # Get the class (either '+' or '-')
-            prediction_class = match.iloc[0]['class']
-            
-            if prediction_class == '+':
-                prediction = 'Promoter'
-            else:
-                prediction = 'Non-Promoter'
-            
-            return jsonify({'class': prediction_class, 'prediction': prediction}), 200
-        
-        # If the sequence is not found
-        return jsonify({'error': 'Sequence not found in the dataset'}), 404
+        # Perform your sequence classification logic here
+        # For example, let's pretend we are making a prediction
+        prediction = '+'  # or '-' based on your model
+
+        return jsonify({'prediction': prediction})
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error: {str(e)}")
+        return jsonify({'error': 'An error occurred'}), 500
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
