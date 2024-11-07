@@ -47,7 +47,7 @@ const Predictor = () => {
                 <div>
                     <h2>Prediction Result</h2>
                     <p><strong>Class:</strong> {prediction.class === '+' ? 'Promoter' : 'Non-Promoter'}</p>
-                    
+                    <p><strong>ID:</strong> {prediction.id}</p>
                 </div>
             )}
 
