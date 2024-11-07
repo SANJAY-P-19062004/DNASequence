@@ -5,6 +5,7 @@ const Predictor = () => {
     const [sequence, setSequence] = useState('');
     const [prediction, setPrediction] = useState(null);
     const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,9 +21,11 @@ const Predictor = () => {
             // Update the prediction state with the result from the backend
             setPrediction(response.data);
             setError('');
+            setMessage(response.data.message || '');  // Display success message
         } catch (err) {
             // Handle error response
             setPrediction(null);
+            setMessage('');
             setError(err.response?.data?.error || err.message || 'Something went wrong');
         }
     };
@@ -42,6 +45,12 @@ const Predictor = () => {
                 </label>
                 <button type="submit">Classify</button>
             </form>
+
+            {message && !error && (
+                <div>
+                    <h2>{message}</h2>
+                </div>
+            )}
 
             {prediction && prediction.class && (
                 <div>

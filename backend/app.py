@@ -55,9 +55,16 @@ def predict():
     matched_entry = next((entry for entry in dataset if entry['sequence'] == sequence), None)
     
     if matched_entry:
-        return jsonify({'class': matched_entry['class'], 'id': matched_entry['id']})
+        return jsonify({
+            'class': matched_entry['class'],
+            'id': matched_entry['id'],
+            'message': 'Sequence found in dataset.'
+        })
     else:
-        return jsonify({'error': 'Sequence not found in dataset.'}), 404
+        return jsonify({
+            'error': 'Sequence not found in dataset.',
+            'message': 'Please verify the sequence or try a different one.'
+        }), 404
 
 if __name__ == '__main__':
     app.run(debug=True)
