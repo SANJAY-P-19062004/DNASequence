@@ -1,60 +1,60 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const Predictor = () => {
+const PredictSequence = () => {
     const [sequence, setSequence] = useState('');
-    const [result, setResult] = useState(null);
+    const [prediction, setPrediction] = useState(null);
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleInputChange = (e) => {
-        setSequence(e.target.value);
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setResult(null);
-        setIsLoading(true);
 
         try {
+            // Send the sequence to the backend for prediction
             const response = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
-            // Check if the response contains a class
-            if (response.data.class) {
-                setResult(response.data);
-            } else {
-                setError('Prediction error: Sequence not found in the dataset.');
-            }
+
+            // Update the prediction state with the result from backend
+            setPrediction(response.data);
+            setError('');
         } catch (err) {
-            setError(err.response ? err.response.data.error : 'An error occurred');
-        } finally {
-            setIsLoading(false);
+            // Handle error response
+            setPrediction(null);
+            setError(err.response?.data?.error || 'Something went wrong');
         }
     };
 
     return (
         <div>
-            <h1>DNA Sequence Predictor</h1>
+            <h1>Sequence Classification</h1>
             <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    value={sequence}
-                    onChange={handleInputChange}
-                    placeholder="Enter nucleotide sequence"
-                    required
-                />
-                <button type="submit">Predict</button>
+                <label>
+                    Enter DNA Sequence:
+                    <textarea
+                        value={sequence}
+                        onChange={(e) => setSequence(e.target.value)}
+                        rows="4"
+                        cols="50"
+                    />
+                </label>
+                <button type="submit">Classify</button>
             </form>
-            {isLoading && <p>Loading...</p>}
-            {result && (
+
+            {prediction && (
                 <div>
-                    <h2>Prediction:</h2>
-                    <p>Class: {result.class === '+' ? 'Promoter' : 'Non-Promoter'}</p>
+                    <h2>Prediction Result</h2>
+                    <p><strong>Class:</strong> {prediction.class}</p>
+                    <p><strong>Prediction:</strong> {prediction.prediction}</p>
                 </div>
             )}
-            {error && <h2 style={{ color: 'red' }}>{error}</h2>}
+
+            {error && (
+                <div>
+                    <h2>Error</h2>
+                    <p>{error}</p>
+                </div>
+            )}
         </div>
     );
 };
 
-export default Predictor;
+export default PredictSequence;
