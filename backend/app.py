@@ -1,32 +1,63 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import requests
+import pandas as pd
+import joblib
+import os
 
 app = Flask(__name__)
-CORS(app)  # This enables CORS for all domains, ensure it is enabled for your domain if necessary
+CORS(app, origins=["https://dna-sequence.vercel.app"])
+CORS(app)
+
+# Load pre-trained model
+model_path = 'model1.pkl'
+if os.path.exists(model_path):
+    model = joblib.load(model_path)
+else:
+    model = None  # Handle case if model is missing
+
+# Dataset URL for fetching promoter sequences
+DATASET_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/molecular-biology/promoter-gene-sequences/promoters.data"
+
+def fetch_dataset():
+    try:
+        response = requests.get(DATASET_URL)
+        response.raise_for_status()  
+        
+        # Parse UCI dataset format
+        from io import StringIO
+        csv_content = StringIO(response.text)
+        df = pd.read_csv(csv_content, header=None, names=['class', 'id', 'sequence'])
+
+        return df.to_dict(orient='records')
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching dataset: {e}")
+        return []
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    try:
-        # Get the sequence from the request body
-        data = request.get_json()
-        sequence = data.get('sequence')
+    if model is None:
+        return jsonify({'error': 'Model not available'}), 500
 
-        if not sequence:
-            return jsonify({'error': 'No sequence provided'}), 400
+    data = request.json
+    sequence = data.get('sequence', '')
 
-        # Ensure the sequence length is 57 (as per your request)
-        if len(sequence) != 57:
-            return jsonify({'error': 'Sequence must be exactly 57 characters long'}), 400
+    # Ensure sequence length is correct
+    if len(sequence) != 57:
+        return jsonify({'error': 'Sequence must be exactly 57 nucleotides long.'}), 400
 
-        # For the sake of example, let's mock the prediction process
-        # Replace this with actual model prediction logic
-        prediction = '+'  # Change this based on your model's logic
-        return jsonify({'prediction': prediction})
+    # Fetch dataset to compare input sequence
+    dataset = fetch_dataset()
+    if not dataset:
+        return jsonify({'error': 'Could not fetch dataset.'}), 500
 
-    except Exception as e:
-        # If any error occurs, log it and return a 500 error
-        print(f"Error: {str(e)}")
-        return jsonify({'error': 'An internal error occurred'}), 500
+    # Check if sequence exists in dataset
+    matched_entry = next((entry for entry in dataset if entry['sequence'] == sequence), None)
+    
+    if matched_entry:
+        return jsonify({'class': matched_entry['class'], 'id': matched_entry['id']})
+    else:
+        return jsonify({'error': 'Sequence not found in dataset.'}), 404
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)

@@ -10,14 +10,14 @@ const Predictor = () => {
         e.preventDefault();
 
         try {
-            // Send the sequence to the backend for prediction with a timeout of 10 seconds
+            // Send the sequence to the backend for prediction
             const response = await axios.post(
-                'https://dnasequence.onrender.com/predict',
+                'https://dnasequence.onrender.com/predict', 
                 { sequence },
-                { timeout: 10000 }  // Set a timeout of 10 seconds
+                { timeout: 10000 }  // Timeout set to 10 seconds
             );
 
-            // Update the prediction state with the result from backend
+            // Update the prediction state with the result from the backend
             setPrediction(response.data);
             setError('');
         } catch (err) {
@@ -29,10 +29,10 @@ const Predictor = () => {
 
     return (
         <div>
-            <h1>Sequence Classification</h1>
+            <h1>DNA Sequence Classification</h1>
             <form onSubmit={handleSubmit}>
                 <label>
-                    Enter DNA Sequence:
+                    Enter DNA Sequence (57 nucleotides):
                     <textarea
                         value={sequence}
                         onChange={(e) => setSequence(e.target.value)}
@@ -43,10 +43,11 @@ const Predictor = () => {
                 <button type="submit">Classify</button>
             </form>
 
-            {prediction && (
+            {prediction && prediction.class && (
                 <div>
                     <h2>Prediction Result</h2>
-                    <p><strong>Prediction:</strong> {prediction.prediction === "+" ? "Promoter" : "Non-Promoter"}</p>
+                    <p><strong>Class:</strong> {prediction.class === '+' ? 'Promoter' : 'Non-Promoter'}</p>
+                    
                 </div>
             )}
 
