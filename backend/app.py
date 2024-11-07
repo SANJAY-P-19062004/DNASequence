@@ -6,6 +6,7 @@ import joblib
 import os
 
 app = Flask(__name__)
+CORS(app, origins=["https://dna-sequence.vercel.app"])
 CORS(app)
 
 # Load pre-trained model

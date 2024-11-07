@@ -24,7 +24,7 @@ const Predictor = () => {
         }
 
         try {
-            const response = await axios.post('http://localhost:5000/predict', { sequence });
+            const response = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
             setResult(response.data);
         } catch (err) {
             setError(err.response ? err.response.data.error : 'An error occurred');
