@@ -48,12 +48,13 @@ const Predictor = () => {
             </form>
             {isLoading && <p>Loading...</p>}
             {result && (
-                <div>
-                    <h2>Prediction:</h2>
-                    <p>Class: {result.class}</p>
-                    <p>ID: {result.id}</p>
-                </div>
-            )}
+  <div>
+    <h2>Prediction:</h2>
+    <p>Class: {result.class === 1 ? 'Promoter' : 'Non-Promoter'}</p>
+    <p>ID: {result.id}</p>
+  </div>
+)}
+
             {error && <h2 style={{ color: 'red' }}>{error}</h2>}
         </div>
     );
