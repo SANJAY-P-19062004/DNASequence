@@ -50,10 +50,12 @@ const Predictor = () => {
             {result && (
   <div>
     <h2>Prediction:</h2>
-    <p>Class: {result.class === '+' ? 'Promoter' : 'Non-Promoter'}</p>
-    <p>ID: {result.id}</p>
+    
+    <p>Class: {result.sequence === '+' ? 'Promoter' : 'Non-Promoter'}</p>
+    
   </div>
 )}
+
 
 
             {error && <h2 style={{ color: 'red' }}>{error}</h2>}
