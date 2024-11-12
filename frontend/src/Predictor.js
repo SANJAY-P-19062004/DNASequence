@@ -1,82 +1,71 @@
+// App.js
 import React, { useState } from 'react';
-import axios from 'axios';
 import './index.css';
 
 const Predictor = () => {
   const [sequence, setSequence] = useState('');
-  const [response, setResponse] = useState(null);
+  const [prediction, setPrediction] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleInputChange = (e) => {
+    setSequence(e.target.value);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setResponse(null);
+    setLoading(true);
     setError('');
-
-    // Validate sequence length
-    if (sequence.length !== 57) {
-      setError('Sequence must be exactly 57 nucleotides long.');
-      return;
-    }
+    setPrediction('');
 
     try {
-      console.log('Sending request to the server...');
-      const res = await axios.post('https://dnasequence.onrender.com/predict', { sequence: sequence.toLowerCase() });
-
-      // Debugging output
-      console.log('Raw server response:', res);
-      console.log('Response data:', res.data);
-
-      // Check if response data has the expected structure
-      if (res.data && (res.data.class || res.data.error || res.data.message)) {
-        setResponse(res.data);
+      const response = await fetch('https://dnasequence.onrender.com/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sequence: sequence }),
+      });
+      
+      const data = await response.json();
+      if (data.error) {
+        setError(data.error);
       } else {
-        setError('Unexpected response format from server.');
-        console.error('Unexpected server response:', res.data);
+        setPrediction(data.prediction);
       }
     } catch (err) {
-      console.error('Error:', err);
-      if (err.response) {
-        setError(err.response.data.error || 'Prediction failed. Please try again.');
-      } else {
-        setError('Server error. Please try again later.');
-      }
+      setError('Error occurred while making the prediction.');
     }
+    setLoading(false);
   };
 
   return (
     <div className="container">
-      <h1>DNA Sequence Classifier</h1>
-      <form onSubmit={handleSubmit} className="form">
-        <textarea
-          className="textarea"
-          placeholder="Enter a DNA sequence of 57 nucleotides"
-          value={sequence}
-          onChange={(e) => setSequence(e.target.value)}
-          maxLength={57}
-          rows={4}
-        />
-        <button type="submit" className="button">
-          Predict
+      <h1>Promoter Gene Sequence Classifier</h1>
+      <form onSubmit={handleSubmit}>
+        <label>
+          Gene Sequence:
+          <textarea
+            value={sequence}
+            onChange={handleInputChange}
+            rows="4"
+            cols="50"
+            placeholder="Enter gene sequence here..."
+          />
+        </label>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Processing...' : 'Predict'}
         </button>
       </form>
-      {error && <p className="error">{error}</p>}
-      {response && (
+
+      {prediction && (
         <div className="result">
-          {response.class ? (
-            <>
-              <p>
-                <strong>Class:</strong> {response.class === '+' ? 'Promoter' : 'Non-Promoter'}
-              </p>
-              <p>
-                <strong>ID:</strong> {response.id || 'N/A'}
-              </p>
-              <p>{response.message || 'Prediction completed successfully.'}</p>
-            </>
-          ) : (
-            <p>{response.error || response.message || 'No data returned from server.'}</p>
-          )}
+          <h2>Prediction Result:</h2>
+          <p>{`This sequence is a ${prediction === '1' ? 'Promoter' : 'Non-Promoter'}`}</p>
         </div>
       )}
+
+      {error && <p className="error">{error}</p>}
     </div>
   );
 };
