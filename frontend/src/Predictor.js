@@ -21,12 +21,22 @@ const Predictor = () => {
     try {
       console.log('Sending request to the server...');
       const res = await axios.post('https://dnasequence.onrender.com/predict', { sequence: sequence.toLowerCase() });
-      console.log('Server response:', res.data);
-      setResponse(res.data);
+
+      // Debugging output
+      console.log('Raw server response:', res);
+      console.log('Response data:', res.data);
+
+      // Check if response data has the expected structure
+      if (res.data && (res.data.class || res.data.error || res.data.message)) {
+        setResponse(res.data);
+      } else {
+        setError('Unexpected response format from server.');
+        console.error('Unexpected server response:', res.data);
+      }
     } catch (err) {
       console.error('Error:', err);
       if (err.response) {
-        setError(err.response.data.error);
+        setError(err.response.data.error || 'Prediction failed. Please try again.');
       } else {
         setError('Server error. Please try again later.');
       }
@@ -58,12 +68,12 @@ const Predictor = () => {
                 <strong>Class:</strong> {response.class === '+' ? 'Promoter' : 'Non-Promoter'}
               </p>
               <p>
-                <strong>ID:</strong> {response.id}
+                <strong>ID:</strong> {response.id || 'N/A'}
               </p>
-              <p>{response.message}</p>
+              <p>{response.message || 'Prediction completed successfully.'}</p>
             </>
           ) : (
-            <p>{response.message}</p>
+            <p>{response.error || response.message || 'No data returned from server.'}</p>
           )}
         </div>
       )}
