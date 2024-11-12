@@ -1,4 +1,3 @@
-// Predictor.js
 import React, { useState } from 'react';
 import axios from 'axios';
 import './index.css';
@@ -21,7 +20,7 @@ const Predictor = () => {
 
     try {
       console.log('Sending request to the server...');
-      const res = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
+      const res = await axios.post('https://dnasequence.onrender.com/predict', { sequence: sequence.toLowerCase() });
       console.log('Server response:', res.data);
       setResponse(res.data);
     } catch (err) {
@@ -56,7 +55,7 @@ const Predictor = () => {
           {response.class ? (
             <>
               <p>
-                <strong>Class:</strong> {response.class}
+                <strong>Class:</strong> {response.class === '+' ? 'Promoter' : 'Non-Promoter'}
               </p>
               <p>
                 <strong>ID:</strong> {response.id}
