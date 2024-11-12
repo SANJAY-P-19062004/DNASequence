@@ -1,15 +1,14 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import joblib
 import numpy as np
 
+# Initialize Flask app
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
-# Load your pre-trained model
-try:
-    model = joblib.load('model1.pkl')
-    print("Model loaded successfully.")
-except Exception as e:
-    print(f"Error loading model: {e}")
+# Load the saved model
+model = joblib.load('model1.pkl')
 
 @app.route('/')
 def home():
@@ -18,43 +17,19 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get the sequence from the request body
         data = request.get_json(force=True)
-        if 'sequence' not in data:
-            return jsonify({'error': 'No sequence field found in the request'}), 400
-
-        sequence = data['sequence'].lower()
-
-        # Validate sequence length
-        if len(sequence) != 57:
-            return jsonify({'error': 'Sequence must be exactly 57 nucleotides long.'}), 400
-
-        # Convert sequence to list of nucleotides
+        sequence = data['sequence']
         nucleotides = list(sequence)
-
-        # Prepare input for model (convert to numpy array with shape (1, 57))
+        nucleotides = [x for x in nucleotides if x != '\t']
+        
+        # Convert sequence to numpy array for model prediction
         sequence_vector = np.array([nucleotides])
-
+        
         # Make prediction
-        try:
-            prediction = model.predict(sequence_vector)
-        except Exception as model_error:
-            print(f"Model prediction error: {model_error}")
-            return jsonify({'error': 'Error occurred during model prediction.'}), 500
-
-        # Interpret the prediction
-        class_label = prediction[0]
-        result = 'Promoter' if class_label == '+' else 'Non-Promoter'
-
-        return jsonify({
-            'class': class_label,
-            'id': data.get('id', 'N/A'),
-            'message': f'Sequence classified as {result}.'
-        })
-    
+        prediction = model.predict(sequence_vector)
+        return jsonify({'class': str(prediction[0])})
     except Exception as e:
-        print(f"Server error: {e}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({'error': str(e)})
 
 if __name__ == "__main__":
     app.run(debug=True)
