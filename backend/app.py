@@ -1,17 +1,15 @@
 from flask import Flask, jsonify, request
 import joblib
 import numpy as np
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Load the saved model
-model = joblib.load('model1.pkl')
-
-# Optionally, load a scaler if you're using one in preprocessing (you can adjust based on your model preprocessing steps)
-# scaler = joblib.load('scaler.pkl')  # Uncomment if you're using a scaler
+# Load your pre-trained model
+try:
+    model = joblib.load('model1.pkl')
+    print("Model loaded successfully.")
+except Exception as e:
+    print(f"Error loading model: {e}")
 
 @app.route('/')
 def home():
@@ -20,33 +18,43 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Get JSON data from request
+        # Get the sequence from the request body
         data = request.get_json(force=True)
-        
-        # Assume the input data has the gene sequence in a field named 'sequence'
-        sequence = data['sequence']
-        
-        # Process the sequence to match the model's expected input
+        if 'sequence' not in data:
+            return jsonify({'error': 'No sequence field found in the request'}), 400
+
+        sequence = data['sequence'].lower()
+
+        # Validate sequence length
+        if len(sequence) != 57:
+            return jsonify({'error': 'Sequence must be exactly 57 nucleotides long.'}), 400
+
         # Convert sequence to list of nucleotides
         nucleotides = list(sequence)
-        nucleotides = [x for x in nucleotides if x != '\t']
-        
-        # Convert nucleotides into a format suitable for your model
-        # Create a DataFrame for model prediction (ensure you encode or transform data as needed)
-        # Example transformation step, customize based on your dataset's feature encoding
-        sequence_vector = np.array([nucleotides])  # You may need more preprocessing depending on your model
-        
-        # If you used scaling, apply the scaler here
-        # sequence_vector = scaler.transform(sequence_vector)  # Uncomment if scaler was used
 
-        # Make the prediction
-        prediction = model.predict(sequence_vector)
-        
-        # Return the prediction in a JSON format
-        return jsonify({'prediction': str(prediction[0])})  # Assuming binary classes (+ or -)
+        # Prepare input for model (convert to numpy array with shape (1, 57))
+        sequence_vector = np.array([nucleotides])
+
+        # Make prediction
+        try:
+            prediction = model.predict(sequence_vector)
+        except Exception as model_error:
+            print(f"Model prediction error: {model_error}")
+            return jsonify({'error': 'Error occurred during model prediction.'}), 500
+
+        # Interpret the prediction
+        class_label = prediction[0]
+        result = 'Promoter' if class_label == '+' else 'Non-Promoter'
+
+        return jsonify({
+            'class': class_label,
+            'id': data.get('id', 'N/A'),
+            'message': f'Sequence classified as {result}.'
+        })
     
     except Exception as e:
-        return jsonify({'error': str(e)})
+        print(f"Server error: {e}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
