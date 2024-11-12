@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import './index.css';
 
 const Predictor = () => {
@@ -22,20 +21,33 @@ const Predictor = () => {
     }
 
     try {
-      const res = await axios.post('https://dnasequence.onrender.com/predict', {
-        sequence: sequence.toLowerCase(),
+      // Using fetch to send a POST request
+      const res = await fetch('https://dnasequence.onrender.com/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sequence: sequence.toLowerCase() }),
       });
 
-      console.log('Server response:', res.data);
+      // Check if the response is OK (status code 200)
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'An error occurred while making the prediction.');
+      }
 
-      if (res.data && (res.data.class !== undefined || res.data.error || res.data.message)) {
-        setResponse(res.data);
+      const data = await res.json();
+      console.log('Server response:', data);
+
+      // Check if the response data has the expected structure
+      if (data && (data.class !== undefined || data.error || data.message)) {
+        setResponse(data);
       } else {
         setError('Unexpected response format from server.');
       }
     } catch (err) {
       console.error('Request error:', err);
-      setError(err.response?.data?.error || 'An error occurred while making the prediction.');
+      setError(err.message || 'An error occurred while making the prediction.');
     } finally {
       setLoading(false);
     }
