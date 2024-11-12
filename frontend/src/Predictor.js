@@ -1,3 +1,4 @@
+// Predictor.js
 import React, { useState } from 'react';
 import axios from 'axios';
 import './index.css';
@@ -12,15 +13,19 @@ const Predictor = () => {
     setResponse(null);
     setError('');
 
+    // Validate sequence length
     if (sequence.length !== 57) {
       setError('Sequence must be exactly 57 nucleotides long.');
       return;
     }
 
     try {
+      console.log('Sending request to the server...');
       const res = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
+      console.log('Server response:', res.data);
       setResponse(res.data);
     } catch (err) {
+      console.error('Error:', err);
       if (err.response) {
         setError(err.response.data.error);
       } else {
