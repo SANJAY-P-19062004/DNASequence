@@ -1,73 +1,70 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import './index.css';
 
 const Predictor = () => {
-    const [sequence, setSequence] = useState('');
-    const [prediction, setPrediction] = useState(null);
-    const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
+  const [sequence, setSequence] = useState('');
+  const [response, setResponse] = useState(null);
+  const [error, setError] = useState('');
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setResponse(null);
+    setError('');
 
-        try {
-            // Send the sequence to the backend for prediction
-            const response = await axios.post(
-                'https://dnasequence.onrender.com/predict', 
-                { sequence },
-                { timeout: 10000 }  // Timeout set to 10 seconds
-            );
+    if (sequence.length !== 57) {
+      setError('Sequence must be exactly 57 nucleotides long.');
+      return;
+    }
 
-            // Update the prediction state with the result from the backend
-            setPrediction(response.data);
-            setError('');
-            setMessage(response.data.message || '');  // Display success message
-        } catch (err) {
-            // Handle error response
-            setPrediction(null);
-            setMessage('');
-            setError(err.response?.data?.error || err.message || 'Something went wrong');
-        }
-    };
+    try {
+      const res = await axios.post('https://dnasequence.onrender.com/predict', { sequence });
+      setResponse(res.data);
+    } catch (err) {
+      if (err.response) {
+        setError(err.response.data.error);
+      } else {
+        setError('Server error. Please try again later.');
+      }
+    }
+  };
 
-    return (
-        <div>
-            <h1>DNA Sequence Classification</h1>
-            <form onSubmit={handleSubmit}>
-                <label>
-                    Enter DNA Sequence (57 nucleotides):
-                    <textarea
-                        value={sequence}
-                        onChange={(e) => setSequence(e.target.value)}
-                        rows="4"
-                        cols="50"
-                    />
-                </label>
-                <button type="submit">Classify</button>
-            </form>
-
-            {message && !error && (
-                <div>
-                    <h2>{message}</h2>
-                </div>
-            )}
-
-            {prediction && prediction.class && (
-                <div>
-                    <h2>Prediction Result</h2>
-                    <p><strong>Class:</strong> {prediction.class === '+' ? 'Promoter' : 'Non-Promoter'}</p>
-                    <p><strong>ID:</strong> {prediction.id}</p>
-                </div>
-            )}
-
-            {error && (
-                <div>
-                    <h2>Error</h2>
-                    <p>{error}</p>
-                </div>
-            )}
+  return (
+    <div className="container">
+      <h1>DNA Sequence Classifier</h1>
+      <form onSubmit={handleSubmit} className="form">
+        <textarea
+          className="textarea"
+          placeholder="Enter a DNA sequence of 57 nucleotides"
+          value={sequence}
+          onChange={(e) => setSequence(e.target.value)}
+          maxLength={57}
+          rows={4}
+        />
+        <button type="submit" className="button">
+          Predict
+        </button>
+      </form>
+      {error && <p className="error">{error}</p>}
+      {response && (
+        <div className="result">
+          {response.class ? (
+            <>
+              <p>
+                <strong>Class:</strong> {response.class}
+              </p>
+              <p>
+                <strong>ID:</strong> {response.id}
+              </p>
+              <p>{response.message}</p>
+            </>
+          ) : (
+            <p>{response.message}</p>
+          )}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default Predictor;
