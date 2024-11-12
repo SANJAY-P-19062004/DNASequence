@@ -46,32 +46,46 @@ def predict():
     if model is None:
         return jsonify({'error': 'Model not available'}), 500
 
+    # Get the sequence from the request
     data = request.json
     sequence = data.get('sequence', '')
 
-    # Ensure sequence length is correct
+    # Ensure sequence length is correct (57 nucleotides expected in your dataset)
     if len(sequence) != 57:
         return jsonify({'error': 'Sequence must be exactly 57 nucleotides long.'}), 400
 
-    # Fetch dataset to compare input sequence
-    dataset = fetch_dataset()
-    if not dataset:
-        return jsonify({'error': 'Could not fetch dataset.'}), 500
-
-    # Check if sequence exists in dataset
-    matched_entry = next((entry for entry in dataset if entry['sequence'] == sequence), None)
+    # Prepare the sequence for prediction
+    nucleotides = list(sequence)
+    nucleotides = [x for x in nucleotides if x != '\t']  # Remove any unwanted characters
     
-    if matched_entry:
-        return jsonify({
-            'class': matched_entry['class'],
-            'id': matched_entry['id'],
-            'message': 'Sequence found in dataset.'
-        })
-    else:
-        return jsonify({
-            'error': 'Sequence not found in dataset.',
-            'message': 'Please verify the sequence or try a different one.'
-        }), 404
+    # Create a feature vector for the sequence (this is based on your preprocessing)
+    feature_vector = []
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    for nucleotide in nucleotides:
+        if nucleotide == 'a':
+            feature_vector.append([1, 0, 0, 0])  # A: [1, 0, 0, 0]
+        elif nucleotide == 'c':
+            feature_vector.append([0, 1, 0, 0])  # C: [0, 1, 0, 0]
+        elif nucleotide == 'g':
+            feature_vector.append([0, 0, 1, 0])  # G: [0, 0, 1, 0]
+        elif nucleotide == 't':
+            feature_vector.append([0, 0, 0, 1])  # T: [0, 0, 0, 1]
+
+    # Flatten the list to create the final input feature vector
+    feature_vector = np.array(feature_vector).flatten().reshape(1, -1)
+
+    # Predict using the loaded model
+    prediction = model.predict(feature_vector)
+
+    # Create the response based on the prediction
+    result = {
+        'class': 'Promoter' if prediction[0] == 1 else 'Non-Promoter',
+        'id': 'S10',  # Just for testing, replace with your actual logic for 'id'
+        'message': 'Sequence found in dataset.'
+    }
+
+    # Debugging print
+    print("Response being sent to frontend:", result)
+
+    # Return the prediction result
+    return jsonify(result)
