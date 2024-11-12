@@ -46,46 +46,58 @@ def predict():
     if model is None:
         return jsonify({'error': 'Model not available'}), 500
 
-    # Get the sequence from the request
     data = request.json
-    sequence = data.get('sequence', '')
+    sequence = data.get('sequence', '').lower()  # Convert sequence to lowercase
 
-    # Ensure sequence length is correct (57 nucleotides expected in your dataset)
+    # Ensure sequence length is correct
     if len(sequence) != 57:
         return jsonify({'error': 'Sequence must be exactly 57 nucleotides long.'}), 400
 
-    # Prepare the sequence for prediction
-    nucleotides = list(sequence)
-    nucleotides = [x for x in nucleotides if x != '\t']  # Remove any unwanted characters
+    # Fetch dataset to compare input sequence
+    dataset = fetch_dataset()
+    if not dataset:
+        return jsonify({'error': 'Could not fetch dataset.'}), 500
+
+    # Check if sequence exists in dataset
+    matched_entry = next((entry for entry in dataset if entry['sequence'] == sequence), None)
     
-    # Create a feature vector for the sequence (this is based on your preprocessing)
-    feature_vector = []
+    if matched_entry:
+        # Sequence is found in the dataset
+        return jsonify({
+            'class': matched_entry['class'],
+            'id': matched_entry['id'],
+            'message': 'Sequence found in dataset.'
+        })
+    else:
+        # Sequence is not found in the dataset, proceed with model prediction
+        nucleotides = list(sequence)
+        nucleotides = [x for x in nucleotides if x != '\t']  # Remove any unwanted characters
+        
+        # Create a feature vector for the sequence (this is based on your preprocessing)
+        feature_vector = []
+        for nucleotide in nucleotides:
+            if nucleotide == 'a':
+                feature_vector.append([1, 0, 0, 0])  # A: [1, 0, 0, 0]
+            elif nucleotide == 'c':
+                feature_vector.append([0, 1, 0, 0])  # C: [0, 1, 0, 0]
+            elif nucleotide == 'g':
+                feature_vector.append([0, 0, 1, 0])  # G: [0, 0, 1, 0]
+            elif nucleotide == 't':
+                feature_vector.append([0, 0, 0, 1])  # T: [0, 0, 0, 1]
 
-    for nucleotide in nucleotides:
-        if nucleotide == 'a':
-            feature_vector.append([1, 0, 0, 0])  # A: [1, 0, 0, 0]
-        elif nucleotide == 'c':
-            feature_vector.append([0, 1, 0, 0])  # C: [0, 1, 0, 0]
-        elif nucleotide == 'g':
-            feature_vector.append([0, 0, 1, 0])  # G: [0, 0, 1, 0]
-        elif nucleotide == 't':
-            feature_vector.append([0, 0, 0, 1])  # T: [0, 0, 0, 1]
+        # Flatten the list to create the final input feature vector
+        feature_vector = pd.DataFrame(feature_vector).values.flatten().reshape(1, -1)
 
-    # Flatten the list to create the final input feature vector
-    feature_vector = np.array(feature_vector).flatten().reshape(1, -1)
+        # Predict using the loaded model
+        prediction = model.predict(feature_vector)
 
-    # Predict using the loaded model
-    prediction = model.predict(feature_vector)
+        # Return the prediction result
+        if prediction[0] == 1:
+            result = {'class': 'Promoter', 'message': 'This sequence is classified as Promoter.'}
+        else:
+            result = {'class': 'Non-Promoter', 'message': 'This sequence is classified as Non-Promoter.'}
+        
+        return jsonify(result)
 
-    # Create the response based on the prediction
-    result = {
-        'class': 'Promoter' if prediction[0] == 1 else 'Non-Promoter',
-        'id': 'S10',  # Just for testing, replace with your actual logic for 'id'
-        'message': 'Sequence found in dataset.'
-    }
-
-    # Debugging print
-    print("Response being sent to frontend:", result)
-
-    # Return the prediction result
-    return jsonify(result)
+if __name__ == '__main__':
+    app.run(debug=True)
