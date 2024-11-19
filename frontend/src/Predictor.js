@@ -13,13 +13,6 @@ const Predictor = () => {
     setError('');
     setLoading(true);
 
-    // Validate sequence length
-    if (sequence.length !== 57) {
-      setError('Sequence must be exactly 57 nucleotides long.');
-      setLoading(false);
-      return;
-    }
-
     try {
       // Using fetch to send a POST request
       const res = await fetch('https://dnasequence.onrender.com/predict', {
@@ -30,7 +23,6 @@ const Predictor = () => {
         body: JSON.stringify({ sequence: sequence.toLowerCase() }),
       });
 
-      // Check if the response is OK (status code 200)
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'An error occurred while making the prediction.');
@@ -39,7 +31,6 @@ const Predictor = () => {
       const data = await res.json();
       console.log('Server response:', data);
 
-      // Check if the response data has the expected structure
       if (data && (data.class !== undefined || data.error || data.message)) {
         setResponse(data);
       } else {
@@ -59,10 +50,9 @@ const Predictor = () => {
       <form onSubmit={handleSubmit} className="form">
         <textarea
           className="textarea"
-          placeholder="Enter a DNA sequence of 57 nucleotides"
+          placeholder="Enter a DNA sequence"
           value={sequence}
           onChange={(e) => setSequence(e.target.value)}
-          maxLength={57}
           rows={4}
           required
         />
@@ -77,9 +67,7 @@ const Predictor = () => {
           <p>
             <strong>Class:</strong> {response.class === '+' ? 'Promoter' : 'Non-Promoter'}
           </p>
-          <p>
-            <strong>ID:</strong> {response.id || 'N/A'}
-          </p>
+          
           <p>{response.message || 'Prediction completed successfully.'}</p>
         </div>
       )}
